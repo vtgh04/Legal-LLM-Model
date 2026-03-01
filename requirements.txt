@@ -1,0 +1,29 @@
+# Core Machine Learning & LLM libraries
+torch>=2.0.0
+transformers>=4.30.0
+accelerate>=0.20.0
+datasets>=2.13.0
+peft>=0.4.0
+bitsandbytes>=0.40.0
+sentencepiece>=0.1.99
+
+# Evaluation
+evaluate>=0.4.0
+scikit-learn>=1.2.0
+seqeval>=1.2.2
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Jupyter and Utilities
+notebook>=6.5.0
+jupyterlab>=3.6.0
+tqdm>=4.65.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Optional: Web App / Serving (if applicable later)
+# fastapi>=0.100.0
+# uvicorn>=0.22.0
+# streamlit>=1.25.0

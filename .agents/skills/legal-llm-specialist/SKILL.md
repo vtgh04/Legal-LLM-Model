@@ -199,9 +199,15 @@ Track these metrics continuously in your MLflow / W&B dashboard:
 
 ## Standard Operating Procedure (SOP)
 
+> **⚠️ MANDATORY**: Before writing any code or notebook cell, also read
+> **[`.agents/KAGGLE_ENV.md`](../../KAGGLE_ENV.md)** — it defines the compute
+> environment, I/O paths, hardware limits, and coding rules that override all
+> general assumptions.
+
 When receiving a new task or user request, always follow this order:
 
 ```
+0. READ .agents/KAGGLE_ENV.md for environment constraints (BEFORE any code).
 1. READ this SKILL.md fully before responding.
 2. IDENTIFY the legal domain (contract, IP, criminal, tax, etc.).
 3. IDENTIFY the jurisdiction (or ask if unclear).
@@ -226,9 +232,10 @@ When receiving a new task or user request, always follow this order:
 ```
 Legal-LLM-Model/
 ├── .agents/
+│   ├── KAGGLE_ENV.md           ← READ SECOND (hardware & I/O rules)
 │   ├── skills/
 │   │   └── legal-llm-specialist/
-│   │       └── SKILL.md        ← YOU ARE HERE (read first)
+│   │       └── SKILL.md        ← READ FIRST (mission & capabilities)
 │   └── workflows/
 │       ├── data-pipeline.md
 │       ├── fine-tuning.md

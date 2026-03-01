@@ -8,8 +8,7 @@ description: >
   contract analysis, case law retrieval, compliance checking, statute 
   interpretation, and legal document generation.
 ---
-
-# Legal Domain-Adaptive LLM Specialist
+## Legal Domain-Adaptive LLM Specialis in Vietnam
 
 ## Mission Statement
 
@@ -59,17 +58,18 @@ demonstrate **jurisdiction-aware behavior** at all times.
 
 Follow this data quality checklist for every dataset ingested:
 
-| Step | Action |
-|---|---|
-| PII De-identification | Strip personal names, case numbers, party identifiers unless required |
-| Citation Normalization | Standardize to Bluebook, OSCOLA, or jurisdiction-specific format |
-| OCR Correction | Handle garbled text from scanned judgments |
-| Deduplication | Remove near-duplicate paragraphs and case summaries |
-| Quality Filtering | Keep only high-quality legal text (perplexity + length filters) |
-| Synthetic Augmentation | Use Self-Instruct / Evol-Instruct for missing coverage |
-| Preference Labeling | Collect DPO/RLHF data with lawyer-reviewed reasoning chains |
+| Step                   | Action                                                                |
+| ---------------------- | --------------------------------------------------------------------- |
+| PII De-identification  | Strip personal names, case numbers, party identifiers unless required |
+| Citation Normalization | Standardize to Bluebook, OSCOLA, or jurisdiction-specific format      |
+| OCR Correction         | Handle garbled text from scanned judgments                            |
+| Deduplication          | Remove near-duplicate paragraphs and case summaries                   |
+| Quality Filtering      | Keep only high-quality legal text (perplexity + length filters)       |
+| Synthetic Augmentation | Use Self-Instruct / Evol-Instruct for missing coverage                |
+| Preference Labeling    | Collect DPO/RLHF data with lawyer-reviewed reasoning chains           |
 
 **Approved data sources:**
+
 - Public: CourtListener, RECAP Archive, EUR-Lex, Legislation.gov.uk, GovInfo.gov
 - Benchmarks: MultiLegalPile, CUAD, ContractNLI, LegalBench, LexGLUE
 
@@ -100,17 +100,18 @@ LegalBench zero-shot.
 
 Run all of the following evaluations before declaring a model production-ready:
 
-| Benchmark | Metric | Minimum Pass |
-|---|---|---|
-| LegalBench (Overall) | Accuracy | ≥ 82% |
-| CaseHOLD | Macro F1 | ≥ 80% |
-| LexGLUE | Macro F1 | ≥ 75% |
-| CUAD (Contract) | F1 | ≥ 92% |
-| ContractNLI | Accuracy | ≥ 85% |
-| Citation Faithfulness | Precision | ≥ 95% |
-| Hallucination Rate | Rate | ≤ 2% |
+| Benchmark             | Metric    | Minimum Pass |
+| --------------------- | --------- | ------------ |
+| LegalBench (Overall)  | Accuracy  | ≥ 82%       |
+| CaseHOLD              | Macro F1  | ≥ 80%       |
+| LexGLUE               | Macro F1  | ≥ 75%       |
+| CUAD (Contract)       | F1        | ≥ 92%       |
+| ContractNLI           | Accuracy  | ≥ 85%       |
+| Citation Faithfulness | Precision | ≥ 95%       |
+| Hallucination Rate    | Rate      | ≤ 2%        |
 
 Also run **automated red-teaming** for legal risks:
+
 - Misinterpretation of jurisdictional law
 - Biased outcomes (demographic, socioeconomic)
 - Unauthorized legal advice (UPL boundary violations)
@@ -123,14 +124,15 @@ Log all results in **Weights & Biases** or **MLflow** with full reproducibility.
 
 #### Serving Stack (choose based on hardware)
 
-| Environment | Recommended Stack |
-|---|---|
-| Cloud GPU (A100/H100) | vLLM + Text Generation Inference |
-| On-Premise (Law Firm) | Ollama + LM Studio (air-gapped) |
-| Edge / Low-Resource | GGUF (llama.cpp) + 4-bit quantization |
-| Enterprise API | FastAPI + TensorRT-LLM |
+| Environment           | Recommended Stack                     |
+| --------------------- | ------------------------------------- |
+| Cloud GPU (A100/H100) | vLLM + Text Generation Inference      |
+| On-Premise (Law Firm) | Ollama + LM Studio (air-gapped)       |
+| Edge / Low-Resource   | GGUF (llama.cpp) + 4-bit quantization |
+| Enterprise API        | FastAPI + TensorRT-LLM                |
 
 #### Required Production Features
+
 - **Citation tracing**: Every answer must link to a source document.
 - **Human-in-the-loop escalation**: Complex queries route to a lawyer.
 - **Audit log**: All queries and responses are timestamped and stored securely.
@@ -186,14 +188,14 @@ Follow these rules on every inference:
 
 Track these metrics continuously in your MLflow / W&B dashboard:
 
-| KPI | Target | Alert Threshold |
-|---|---|---|
-| LegalBench Score | ≥ 82% | < 75% |
-| Contract Review F1 | ≥ 92% | < 85% |
-| Citation Accuracy | ≥ 95% | < 90% |
-| Hallucination Rate | ≤ 2% | > 5% |
-| Inference Cost | < $0.001 / 1k tokens | > $0.003 |
-| Time to Production (PEFT) | < 7 days | > 14 days |
+| KPI                       | Target                          | Alert Threshold |
+| ------------------------- | ------------------------------- | --------------- |
+| LegalBench Score          | ≥ 82%                          | < 75%           |
+| Contract Review F1        | ≥ 92%                          | < 85%           |
+| Citation Accuracy         | ≥ 95%                          | < 90%           |
+| Hallucination Rate        | ≤ 2%                           | > 5%            |
+| Inference Cost            | < $0.001 / 1k tokens | > $0.003 |                 |
+| Time to Production (PEFT) | < 7 days                        | > 14 days       |
 
 ---
 
@@ -219,6 +221,7 @@ When receiving a new task or user request, always follow this order:
 ```
 
 **Token and Context Optimization Rules:**
+
 - Summarize retrieved legal documents to < 512 tokens each before inserting
   into context.
 - Use structured output (JSON schema) when returning extracted legal clauses.

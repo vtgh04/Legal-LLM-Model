@@ -1,0 +1,184 @@
+# Phân tích `huyydangg/DEk21_hcmute_embedding` — Có áp dụng được cho đề tài không?
+
+## TL;DR — Kết luận nhanh
+
+**CÓ, rất phù hợp.** Repo này dùng **đúng base model** (`bkai-foundation-models/vietnamese-bi-encoder`) và **đúng kỹ thuật** (Matryoshka Representation Learning) mà chúng ta cần cho phần **embedding / RAG retrieval** của đề tài. Tuy nhiên, **chúng ta nên tự train tương tự, KHÔNG nên chỉ tải model về**, vì:
+1. Chúng ta cần chứng minh năng lực nghiên cứu (đồ án)
+2. Chúng ta có thể train tốt hơn bằng dataset lớn hơn + hyperparameter tối ưu hơn
+3. Hiểu sâu pipeline sẽ giúp debug và cải tiến về sau
+
+---
+
+## 1. Repo này LÀM GÌ?
+
+### Mục tiêu
+Đây là một **Embedding Model** (mô hình nhúng văn bản) chuyên cho **tìm kiếm văn bản pháp luật Việt Nam** — không phải LLM sinh text.
+
+### Cách hoạt động
+```
+Câu hỏi pháp luật → [ViTokenizer tách từ] → [Model encode] → Vector 768 chiều
+Điều luật trong kho → [ViTokenizer tách từ] → [Model encode] → Vector 768 chiều
+                                                                      ↓
+                                                          Cosine Similarity → Xếp hạng
+```
+
+**Ví dụ cụ thể** (từ repo):
+- **Input query**: "Điều kiện để kết hôn hợp pháp là gì?"
+- **Corpus**: 5 điều luật khác nhau
+- **Output**: Xếp hạng theo cosine similarity → điều luật liên quan nhất lên đầu
+
+---
+
+## 2. Tech Stack chi tiết
+
+| Thành phần | Repo dùng | Giải thích |
+|---|---|---|
+| **Base model** | `bkai-foundation-models/vietnamese-bi-encoder` | RoBERTa-based, pre-trained trên tiếng Việt, chuyên cho bi-encoder retrieval |
+| **Framework** | `sentence-transformers` (SBERT) | Thư viện chuẩn để train embedding models |
+| **Training technique** | **Matryoshka Representation Learning (MRL)** | Cho phép dùng embedding ở nhiều chiều (768, 512, 256, 128, 64) mà vẫn giữ quality |
+| **Word segmentation** | `pyvi.ViTokenizer` | Tách từ tiếng Việt trước khi encode (bắt buộc cho RoBERTa VN) |
+| **Evaluation** | `InformationRetrievalEvaluator` | Đánh giá retrieval: Accuracy@K, Precision@K, Recall@K, MRR, NDCG, MAP |
+| **Training data** | `VMTEB-Zalo-legel-retrieval-wseg` | 67,817 rows — Zalo AI legal corpus đã word-segmented |
+| **Pooling** | Mean pooling | Lấy trung bình tất cả token embeddings (không dùng CLS token) |
+| **Output dim** | 768 (full) / 512 / 256 / 128 / 64 (truncated) | Nhờ Matryoshka learning |
+| **Similarity** | Cosine Similarity | Chuẩn cho retrieval tasks |
+| **Architecture** | `RobertaModel` + `Pooling` layer | 2-layer SentenceTransformer |
+| **Max sequence** | 256 tokens | Tối đa 256 token mỗi passage |
+
+---
+
+## 3. Kết quả Evaluation (Self-reported)
+
+### Dim 768 (full)
+
+| Metric | Score | Đánh giá |
+|---|---|---|
+| Accuracy@1 | 0.586 | Trung bình |
+| Accuracy@3 | 0.703 | Khá |
+| Accuracy@5 | 0.750 | Khá tốt |
+| **Accuracy@10** | **0.811** | **Tốt** |
+| **MRR@10** | **0.657** | Trung bình-khá |
+| **NDCG@10** | **0.694** | Khá |
+| MAP@100 | 0.663 | Khá |
+
+### Dim 512 (truncated Matryoshka)
+
+| Metric | Score | So với dim 768 |
+|---|---|---|
+| Accuracy@1 | 0.585 | ≈ tương đương (-0.001) |
+| Accuracy@3 | 0.700 | ≈ tương đương (-0.003) |
+| Accuracy@10 | 0.807 | ≈ tương đương (-0.004) |
+
+> [!TIP]
+> Matryoshka learning cho phép **giảm chiều xuống 512 mà gần như không mất chất lượng**. Điều này rất hữu ích khi deploy vì FAISS index nhỏ hơn, search nhanh hơn.
+
+---
+
+## 4. So sánh với dự án của chúng ta
+
+Bạn đã có notebook `train-legal-embedding-cloud.ipynb` từ các conversation trước, cũng dùng `bkai-foundation-models/vietnamese-bi-encoder` + MatryoshkaLoss. Đây là so sánh:
+
+| Khía cạnh | DEk21_hcmute | Dự án của chúng ta (mục tiêu) |
+|---|---|---|
+| Base model | `vietnamese-bi-encoder` | `vietnamese-bi-encoder` ✅ **Giống nhau** |
+| Training technique | Matryoshka + SBERT | Matryoshka + MatryoshkaLoss(MNRL) ✅ **Giống nhau** |
+| Training data | `VMTEB-Zalo-wseg` (67K rows) | Zalo + phamson02 + thangvip (**lớn hơn**) |
+| Word segmentation | `pyvi.ViTokenizer` | Cần kiểm tra — có thể dùng `underthesea` hoặc `pyvi` |
+| Max seq length | 256 tokens | Có thể tăng lên 512 tokens |
+| Evaluation | Zalo retrieval only | Zalo + VLQA + custom questions (**đa dạng hơn**) |
+| Mục đích | Embedding model standalone | **Phần retrieval của RAG pipeline cho Legal LLM** |
+
+---
+
+## 5. Những gì chúng ta HỌC ĐƯỢC từ repo này
+
+### ✅ Nên áp dụng
+
+1. **Base model**: `bkai-foundation-models/vietnamese-bi-encoder` là lựa chọn đúng — repo này chứng minh nó hoạt động tốt cho VN legal
+2. **Matryoshka Representation Learning**: Kỹ thuật này giúp linh hoạt chiều embedding khi deploy — chúng ta PHẢI dùng
+3. **Word segmentation bắt buộc**: Repo dùng `pyvi.ViTokenizer` trước khi encode — chúng ta cũng cần tách từ
+4. **`InformationRetrievalEvaluator`**: Cách đánh giá chuẩn — chúng ta nên dùng metrics này
+5. **Mean Pooling**: Chiến lược pooling phù hợp cho retrieval tasks
+
+### ⚠️ Có thể cải thiện (chúng ta nên train tốt hơn)
+
+1. **MRR@10 = 0.657 → mục tiêu chúng ta ≥ 0.75**: Có dư địa cải thiện bằng dataset lớn hơn
+2. **Max seq = 256**: Nhiều điều luật VN dài hơn 256 tokens → tăng lên 512 sẽ capture nhiều context hơn
+3. **Chỉ eval trên Zalo**: Cần thêm evaluation trên VLQA, custom questions
+4. **Thiếu hard negatives mining**: Có thể thêm để tăng chất lượng retrieval
+
+---
+
+## 6. Cách tự train tương tự (KHÔNG chỉ tải model về)
+
+### Pipeline tổng quan
+
+```
+1. Load base model: bkai-foundation-models/vietnamese-bi-encoder
+2. Load dataset: VMTEB-Zalo-legel-retrieval-wseg + thêm data của chúng ta
+3. Word segment ALL text với pyvi.ViTokenizer
+4. Train với:
+   - MatryoshkaLoss(MultipleNegativesRankingLoss)
+   - Matryoshka dimensions: [768, 512, 256, 128, 64]
+   - Evaluator: InformationRetrievalEvaluator
+5. Save model → Push to HuggingFace Hub
+6. Build FAISS index → Tích hợp vào RAG pipeline
+```
+
+### Thư viện cần cài
+
+```python
+!pip install -q sentence-transformers datasets pyvi faiss-gpu
+```
+
+### Code skeleton (sẽ viết chi tiết trong notebook)
+
+```python
+from sentence_transformers import SentenceTransformer, losses, evaluation
+from sentence_transformers.losses import MatryoshkaLoss, MultipleNegativesRankingLoss
+from pyvi import ViTokenizer
+
+# 1. Load base model
+model = SentenceTransformer("bkai-foundation-models/vietnamese-bi-encoder")
+
+# 2. Load + preprocess data
+# ... word segment all texts with ViTokenizer.tokenize() ...
+
+# 3. Training loss (Matryoshka + MNRL)
+inner_loss = MultipleNegativesRankingLoss(model)
+loss = MatryoshkaLoss(model, inner_loss, matryoshka_dims=[768, 512, 256, 128, 64])
+
+# 4. Evaluator
+evaluator = evaluation.InformationRetrievalEvaluator(
+    queries=..., corpus=..., relevant_docs=...
+)
+
+# 5. Train
+model.fit(
+    train_objectives=[(dataloader, loss)],
+    evaluator=evaluator,
+    epochs=3,
+    output_path="./legal-embedding-vn"
+)
+```
+
+---
+
+## 7. Vai trò trong đề tài tổng thể
+
+```mermaid
+graph LR
+    A["Câu hỏi pháp luật"] --> B["Embedding Model<br/>(cái chúng ta sẽ train)"]
+    B --> C["FAISS Vector Search"]
+    D["Kho văn bản<br/>luật VN"] --> E["Embedding Model"]
+    E --> F["FAISS Index"]
+    F --> C
+    C --> G["Top-K điều luật<br/>liên quan nhất"]
+    G --> H["Legal LLM<br/>(Qwen3-4B fine-tuned)"]
+    H --> I["Câu trả lời<br/>+ trích dẫn nguồn"]
+```
+
+> **Embedding model = MẮT** của hệ thống RAG (tìm kiếm điều luật)
+> **Legal LLM = NÃO** của hệ thống (suy luận và trả lời)
+
+Cả hai đều cần thiết. Repo DEk21 chỉ làm phần "MẮT" — chúng ta cần train **cả hai**.
